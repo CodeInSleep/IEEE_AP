@@ -70,27 +70,15 @@ char buf = 'a';
 
 int *seqToSend = (int*) malloc((roundCount+TERMINATOR)*sizeof(int));
 
-void (int *intarray) {
+void expand_array (int *intarray) {
   // get size of array
   int sizeOfSequence = sizeof(intarray)/sizeof(int);
 
   // allocate more space for sequence
   if (roundCount == sizeOfSequence-TERMINATOR) {
-    // point to sequence, store temporarily
-    int *history = intarray;
-
-    // clean memory
-    free(intarray);
     
     // allocate twice the current size
-    intarray = (int*)malloc((roundCount+TERMINATOR)*2*sizeof(int));
-
-    // copy old data to new array
-    int i;
-    for (i = 0; history[i] != 4; i++) {
-      intarray[i] = history[i];
-    }
-    intarray[i] = 4;
+    intarray = (int*)realloc(seqToSend, (roundCount+TERMINATOR)*2*sizeof(int));
   }
 }
 
