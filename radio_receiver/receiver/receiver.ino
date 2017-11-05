@@ -9,7 +9,7 @@
 
 RF24 radio(CE, CS);
 
-int roundCount = 1;
+int rounds = 1;
 
 void setup() {
   radio.begin();
@@ -30,13 +30,15 @@ void setup() {
   pinMode(GREEN_LED, OUTPUT);
   pinMode(YELLOW_LED, OUTPUT);
 
+  randomSeed(analogRead(6));
   Serial.begin(9600);
 }
 
 void blink(int pin) {
   digitalWrite(pin, HIGH);
-  delay(500);
+  delay(1000);
   digitalWrite(pin, LOW);
+  delay(500);
 }
 
 void light(int type) {
@@ -59,26 +61,17 @@ void light(int type) {
 int TERMINATOR = 1;
 char buf = 'a';
 
-//void loop() {
-//  Serial.println("sent a");
-//
-//  radio.write((void*)&buf, 1, false);
-//
-//  delay(1000);
-//
-//}
-
-int *seqToSend = (int*) malloc((roundCount+TERMINATOR)*sizeof(int));
+int *seqToSend = (int*) malloc((rounds+TERMINATOR)*sizeof(int));
 
 void expand_array (int *intarray) {
   // get size of array
   int sizeOfSequence = sizeof(intarray)/sizeof(int);
 
   // allocate more space for sequence
-  if (roundCount == sizeOfSequence-TERMINATOR) {
+  if (rounds == sizeOfSequence-TERMINATOR) {
     
     // allocate twice the current size
-    intarray = (int*)realloc(seqToSend, (roundCount+TERMINATOR)*2*sizeof(int));
+    intarray = (int*)realloc(seqToSend, (rounds+TERMINATOR)*2*sizeof(int));
   }
 }
 
@@ -88,10 +81,9 @@ void loop() {
   // generate random number from 0-2
   int randNum = random(1, 4);
 
-  seqToSend[roundCount-TERMINATOR] = randNum;
-  seqToSend[roundCount] = 4;
+  seqToSend[rounds-TERMINATOR] = randNum;
 
-  for (int i = 0; i < sizeof(seqToSend)/sizeof(int); i++) {
+  for (int i = 0; i < rounds; i++) {
     light(seqToSend[i]);
   }
 
@@ -99,10 +91,10 @@ void loop() {
 
   // send data to transmitter
   radio.write((void*) &randNum, sizeof(int), false);
+  Serial.println("wrote data");
   
   radio.startListening();
-//  
-//
+
 ////  while(true) {
 ////    
 ////    Serial.println("Sending..");
@@ -121,33 +113,29 @@ void loop() {
 // 
     // true if transmitter pressed right button
     int roundSucceeded = 0;   
-//
-    // 0 until succeed
     while (true) {
-//        Serial.println("polling");
         // get response from transmitter
         radio.read((void *)&roundSucceeded, sizeof(int));
 
         if (roundSucceeded) {
           Serial.println("ROUND SUCCEEDED");
-          roundCount++;
           break;
         }
     }
 
-//    // succeeded
-//    if (roundSucceeded == 1) {
-//      Serial.println("round " + String(roundCount) + " succeeded");
-//      light(2);
-//      roundCount++;
-//    } else if (roundSucceeded == 2) {
-//      Serial.println("round " + String(roundCount) + " not succeeded");
-//      light(2);
-//      free(seqToSend);
-//      Serial.println("program ended");
-//    }
-//  
+    // succeeded
+    if (roundSucceeded == 1) {
+      Serial.println("round " + String(rounds) + " succeeded");
+      light(2);
+      rounds++;
+    } else if (roundSucceeded == 2) {
+      Serial.println("round " + String(rounds) + " not succeeded");
+      light(1);
+      free(seqToSend);
+      // free when exiting
+      Serial.println("program ended");
+      delay(10000000);
+    }
+  
    radio.stopListening();
-
-  // free when exiting
 }
