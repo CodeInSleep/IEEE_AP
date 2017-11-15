@@ -4,7 +4,7 @@
 #define CE 9
 #define CS 10
 #define RED_LED 2
-#define GREEN_LED 3
+#define GREEN_LED 5
 #define YELLOW_LED 4
 
 RF24 radio(CE, CS);
@@ -35,10 +35,10 @@ void setup() {
 }
 
 void blink(int pin) {
-  digitalWrite(pin, HIGH);
-  delay(1000);
-  digitalWrite(pin, LOW);
   delay(500);
+  digitalWrite(pin, HIGH);
+  delay(500);
+  digitalWrite(pin, LOW);
 }
 
 void light(int type) {
@@ -52,65 +52,43 @@ void light(int type) {
   }
 }
 
-//typedef struct Sequence{
-//  // send a dynamically allocated list
-//  int *sequence;
-//  int a = 0;
-//};
-
-int TERMINATOR = 1;
+//int TERMINATOR = 1;
 char buf = 'a';
+int arraysize = 1;
 
-int *seqToSend = (int*) malloc((rounds+TERMINATOR)*sizeof(int));
+int *seqToSend = (int*) malloc((rounds)*sizeof(int));
 
-void expand_array (int *intarray) {
-  // get size of array
-  int sizeOfSequence = sizeof(intarray)/sizeof(int);
-
-  // allocate more space for sequence
-  if (rounds == sizeOfSequence-TERMINATOR) {
-    
-    // allocate twice the current size
-    intarray = (int*)realloc(seqToSend, (rounds+TERMINATOR)*2*sizeof(int));
-  }
-}
+//void expand_array (int *intarray) {
+//  // allocate twice the current size
+//  arraysize = rounds*2;
+//  intarray = (int*)realloc(seqToSend, arraysize*sizeof(int));
+//}
 
 void loop() {
+  seqToSend = (int*)realloc(seqToSend, rounds*sizeof(int));
   Serial.println("Round ");
 
   // generate random number from 0-2
   int randNum = random(1, 4);
 
-  seqToSend[rounds-TERMINATOR] = randNum;
+  seqToSend[rounds-1] = randNum;
 
   for (int i = 0; i < rounds; i++) {
     light(seqToSend[i]);
   }
 
-  expand_array(seqToSend);
-
+  // allocate more space for sequence
+//  if (rounds == arraysize) {
+//    expand_array(seqToSend);
+//  }
+ 
+  
   // send data to transmitter
   radio.write((void*) &randNum, sizeof(int), false);
   Serial.println("wrote data");
   
   radio.startListening();
 
-////  while(true) {
-////    
-////    Serial.println("Sending..");
-////    Serial.print(sizeof(seqToSend));
-////    seqToSend[0] = random(0, 3);
-////    seqToSend[1] = 4;
-////    radio.write((void*) &buf, sizeof(buf), 1);
-////    radio.write((void*) seqToSend, sizeof(seqToSend), false);
-////    for (int i = 0; i < sizeof(seqToSend); i++)
-////      Serial.println("Sent " + String(seqToSend[0]) + String(seqToSend[1])); 
-////    delay(1000);
-////    radio.stopListening();
-////  }
-//
-//
-// 
     // true if transmitter pressed right button
     int roundSucceeded = 0;   
     while (true) {
@@ -119,6 +97,7 @@ void loop() {
 
         if (roundSucceeded) {
           Serial.println("ROUND SUCCEEDED");
+          Serial.println(roundSucceeded);
           break;
         }
     }
@@ -126,15 +105,19 @@ void loop() {
     // succeeded
     if (roundSucceeded == 1) {
       Serial.println("round " + String(rounds) + " succeeded");
-      light(2);
+      digitalWrite(GREEN_LED, HIGH);
+      delay(2000);
+      digitalWrite(GREEN_LED, LOW);
       rounds++;
     } else if (roundSucceeded == 2) {
       Serial.println("round " + String(rounds) + " not succeeded");
-      light(1);
+      digitalWrite(RED_LED, HIGH);
+      delay(2000);
+      digitalWrite(RED_LED, LOW);
       free(seqToSend);
       // free when exiting
       Serial.println("program ended");
-      delay(10000000);
+      delay(100000000);
     }
   
    radio.stopListening();
